@@ -2,9 +2,10 @@
 
 #Prompt:
 
-#Please update the code so when the webapp starts the prediction box says "I will predict your next word..." instead of "undefined"
-#Please update it so pressing "use bigram model" and "use trigram model" only changes the prediction word, but doesn't update the story yet.
-#Please update the code so only "writeWord()" function updates the story list in the python code. While "switchModel(Type)" function will only switch the prediction model (bigram or trigram) and not append the prediction word to the story list in the python code.
+#Please implement the auto complete function. I want that as the user is typing into the input box, auto complete word suggestions will be displayed in the "auto complete" box. And the suggestions get updated as the user it typing each letter
+#I want the auto complete functionality to auto complete the current word that the user is typing, instead of predicting the next word that the user is going to type. For example, when the user inputs "wo", I want the auto complete to display the suggestions "world, wonder".
+#Limit the number of suggestions to six and do not provide repeated suggestions
+#when predict word is using trigram model, auto complete suggestions are not showing as the user type into the input box. Please fix this
 
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -49,8 +50,15 @@ class BigramModel:
         last_word = current_words[-1] if current_words else ""
         possible_next_words = self.bigrams[last_word]
         if possible_next_words:
-            return possible_next_words[0]  # Returns the first possible word
+            return possible_next_words  # Returns the first possible word
         return ""
+
+    def get_suggestions(self, current_text):
+        current_words = current_text.split()
+        last_word = current_words[-1] if current_words else ""
+        suggestions = [word for word in self.bigrams if word.startswith(last_word)]
+        unique_suggestions = list(dict.fromkeys(suggestions))  # Remove duplicates
+        return unique_suggestions[:6]  # Limit to six suggestions
 
 # Trigram model
 class TrigramModel:
@@ -68,8 +76,15 @@ class TrigramModel:
         last_two_words = (current_words[-2], current_words[-1])
         possible_next_words = self.trigrams[last_two_words]
         if possible_next_words:
-            return possible_next_words[0]  # Returns the first possible word
+            return possible_next_words  # Returns the first possible word
         return ""
+
+    def get_suggestions(self, current_text):
+        current_words = current_text.split()
+        last_word = current_words[-1] if current_words else ""
+        suggestions = [word for word in self.words if word.startswith(last_word)]
+        unique_suggestions = list(dict.fromkeys(suggestions))  # Remove duplicates
+        return unique_suggestions[:6]  # Limit to six suggestions
 
 bigram_model = BigramModel(sample_story)
 trigram_model = TrigramModel(sample_story)
@@ -116,6 +131,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             next_word = bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
             response = {
                 'next_word': next_word
+            }
+        elif self.path == '/auto-complete':
+            current_text = data.get('text', '').strip()
+            if model_type == "bigram":
+                suggestions = bigram_model.get_suggestions(current_text)
+            else:
+                suggestions = trigram_model.get_suggestions(current_text)
+            response = {
+                'suggestions': suggestions
             }
         self._set_headers()
         self.wfile.write(json.dumps(response).encode('utf-8'))

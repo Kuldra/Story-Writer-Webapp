@@ -27,7 +27,7 @@ Please update the code so only "writeWord()" function updates the story list in 
     <h1>Story Writer</h1>
     <div id="story-box">Your story will appear here...</div>
     <div id="next-word-box">I will predict your next word...</div>
-    <input type="text" id="word-input" placeholder="Enter a word">
+    <input type="text" id="word-input" placeholder="Enter a word" oninput="autoComplete()">
     <button onclick="writeWord()">Write</button>
     <div id="auto-complete-box">Auto Complete</div>
     <button onclick="switchModel('bigram')">Use Bigram Model</button>
@@ -48,6 +48,7 @@ Please update the code so only "writeWord()" function updates the story list in 
                 document.getElementById('story-box').innerText = data.story;
                 document.getElementById('next-word-box').innerText = data.next_word || "I will predict your next word...";
                 document.getElementById('word-input').value = '';
+                document.getElementById('auto-complete-box').innerText = 'Auto Complete';
             })
             .catch(error => console.error('Error:', error));
         }
@@ -62,6 +63,20 @@ Please update the code so only "writeWord()" function updates the story list in 
             .then(response => response.json())
             .then(data => {
                 document.getElementById('next-word-box').innerText = data.next_word || "I will predict your next word...";
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function autoComplete() {
+            let currentText = document.getElementById('word-input').value.trim();
+            fetch('http://localhost:8080/auto-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: currentText, model_type: modelType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('auto-complete-box').innerText = data.suggestions.join(', ') || 'Auto Complete';
             })
             .catch(error => console.error('Error:', error));
         }
