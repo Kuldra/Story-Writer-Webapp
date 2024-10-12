@@ -2,14 +2,7 @@
 <!--
 Prompt:
 
-Please generate a story writer webapp with html as the frontend and python as the backend without the use of external libraries in any part of the code.
-
-The webapp should have:
-1. Input box for user to input words
-2. have a write button for user to confirm input the word
-3. have a box above the input box to show the story inputed by the user
-4. have another thin box between the box and the input box labelled "Next Word"
-5. Have a box under the input box labelled "Auto  Complete"
+Now I would like to implement a next word prediction functionality. Using a python written bigram model as the next word prediction model with provided story as the sample data, the webapp should be able to predict the next word that the user is going to write and display it in the "next word" box. If the user presses the "write" button without inputting any word in the input box, the predicted next word should be used as the input word. If the user did input a word in the input box, the user inputted word should be used as the input word. Please implement this without the use of any external library.
 
 -->
 
@@ -37,8 +30,8 @@ The webapp should have:
 
     <script>
         function writeWord() {
-            const word = document.getElementById('word-input').value;
-            fetch('/write', {
+            let word = document.getElementById('word-input').value.trim();
+            fetch('http://localhost:8080/write', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ word: word })
@@ -46,9 +39,18 @@ The webapp should have:
             .then(response => response.json())
             .then(data => {
                 document.getElementById('story-box').innerText = data.story;
+                document.getElementById('next-word-box').innerText = data.next_word;
                 document.getElementById('word-input').value = '';
-            });
+            })
+            .catch(error => console.error('Error:', error));
         }
+
+        // Fetch the initial next word prediction
+        fetch('http://localhost:8080')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('next-word-box').innerText = data.next_word;
+            });
     </script>
 </body>
 </html>
