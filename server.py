@@ -2,23 +2,43 @@
 
 #Prompt:
 
-#Please update the "Write" button as follows:
-#When Story is blank: say "Write"
-#When story is not blank and user input box is blank: say "Use predicted word"
-#When story is not blank and user input box is not blank: say "Write"
+#At a "End Story" button at the bottom to close the python backend server without using threading
+
+#----------------------------------------
+#Exception occurred during processing of request from ('127.0.0.1', 58894)
+#Traceback (most recent call last):
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 316, in _handle_request_noblock
+#    self.process_request(request, client_address)
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 347, in process_request
+#    self.finish_request(request, client_address)
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 360, in finish_request
+#    self.RequestHandlerClass(request, client_address, self)
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 747, in __init__
+#    self.handle()
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 434, in handle
+#    self.handle_one_request()
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 422, in handle_one_request
+#    method()
+#  File "/Users/tcn/Documents/DMBA/RECO7609/Story writer app/7. WIth End server trial/server.py", line 112, in do_POST
+#    data = json.loads(post_data)
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py", line 346, in loads
+#    return _default_decoder.decode(s)
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py", line 337, in decode
+#    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+#  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py", line 355, in raw_decode
+#    raise JSONDecodeError("Expecting value", s, err.value) from None
+#json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+#Shut down port 8080 only and not 8000
 
 
-#Please update the text in the button as the content of the user input box changes
-
-
-#autoComplete failed to fetch when the user clears the user input box. Please fix this
-
-
+#----------------------------------------------------------------------------------------------------------------------------------
 
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 from collections import defaultdict
+import threading
 
 # Sample story data
 sample_story = """
@@ -125,8 +145,15 @@ class RequestHandler(BaseHTTPRequestHandler):
         global model_type
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
-        data = json.loads(post_data)
         
+        if self.path == '/end':
+            response = {'message': 'Server is shutting down...'}
+            self._set_headers()
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+            threading.Thread(target=httpd.shutdown).start()
+            return
+        
+        data = json.loads(post_data)
         next_word = ""
         
         if self.path == '/write':
@@ -167,6 +194,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(response).encode('utf-8'))
 
 def run(server_class=HTTPServer, handler_class=RequestHandler, port=8080):
+    global httpd
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     print(f'Starting server on port {port}...')
