@@ -47,7 +47,7 @@ class BigramModel:
         last_word = current_words[-1] if current_words else ""
         possible_next_words = self.bigrams[last_word]
         if possible_next_words:
-            return possible_next_words  # Returns the first possible word
+            return possible_next_words[0]  # Returns the first possible word #manual input to limit prediction to one word. Copilot failed to update and fix issue
         return ""
 
 bigram_model = BigramModel(sample_story)
