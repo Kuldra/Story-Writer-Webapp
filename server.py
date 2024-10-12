@@ -2,7 +2,10 @@
 
 #Prompt:
 
-#Please implement a button to switch between using bigram and trigram, and use the appropriate prediction model for the prediction functionality
+#Please update the code so when the webapp starts the prediction box says "I will predict your next word..." instead of "undefined"
+#Please update it so pressing "use bigram model" and "use trigram model" only changes the prediction word, but doesn't update the story yet.
+#Please update the code so only "writeWord()" function updates the story list in the python code. While "switchModel(Type)" function will only switch the prediction model (bigram or trigram) and not append the prediction word to the story list in the python code.
+
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
@@ -87,27 +90,34 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._set_headers()
-        self.wfile.write(json.dumps({'story': ' '.join(story)}).encode('utf-8'))
+        next_word = bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
+        self.wfile.write(json.dumps({'story': ' '.join(story), 'next_word': next_word}).encode('utf-8'))
 
     def do_POST(self):
         global model_type
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data)
-        word = data.get('word', '').strip()
-        if 'model_type' in data:
-            model_type = data['model_type']
-        if not word:
-            if model_type == "bigram":
-                word = bigram_model.predict_next_word(' '.join(story))
-            else:
-                word = trigram_model.predict_next_word(' '.join(story))
-        story.append(word)
+        if self.path == '/write':
+            word = data.get('word', '').strip()
+            if not word:
+                if model_type == "bigram":
+                    word = bigram_model.predict_next_word(' '.join(story))
+                else:
+                    word = trigram_model.predict_next_word(' '.join(story))
+            story.append(word)
+            next_word = bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
+            response = {
+                'story': ' '.join(story),
+                'next_word': next_word
+            }
+        elif self.path == '/switch':
+            model_type = data.get('model_type', model_type)
+            next_word = bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
+            response = {
+                'next_word': next_word
+            }
         self._set_headers()
-        response = {
-            'story': ' '.join(story),
-            'next_word': bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
-        }
         self.wfile.write(json.dumps(response).encode('utf-8'))
 
 def run(server_class=HTTPServer, handler_class=RequestHandler, port=8080):
