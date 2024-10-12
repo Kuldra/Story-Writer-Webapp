@@ -2,7 +2,7 @@
 <!--
 Prompt:
 
-update the webapp to using trigram model instead of bigram model
+Please implement a button to switch between using bigram and trigram, and use the appropriate prediction model for the prediction functionality
 
 -->
 
@@ -27,20 +27,38 @@ update the webapp to using trigram model instead of bigram model
     <input type="text" id="word-input" placeholder="Enter a word">
     <button onclick="writeWord()">Write</button>
     <div id="auto-complete-box">Auto Complete</div>
+    <button onclick="switchModel('bigram')">Use Bigram Model</button>
+    <button onclick="switchModel('trigram')">Use Trigram Model</button>
 
     <script>
+        let modelType = 'bigram';  // Default model type
+
         function writeWord() {
             let word = document.getElementById('word-input').value.trim();
             fetch('http://localhost:8080/write', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ word: word })
+                body: JSON.stringify({ word: word, model_type: modelType })
             })
             .then(response => response.json())
             .then(data => {
                 document.getElementById('story-box').innerText = data.story;
                 document.getElementById('next-word-box').innerText = data.next_word;
                 document.getElementById('word-input').value = '';
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function switchModel(type) {
+            modelType = type;
+            fetch('http://localhost:8080/write', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_type: modelType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('next-word-box').innerText = data.next_word;
             })
             .catch(error => console.error('Error:', error));
         }

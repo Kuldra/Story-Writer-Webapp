@@ -2,7 +2,7 @@
 
 #Prompt:
 
-#update the webapp to using trigram model instead of bigram model
+#Please implement a button to switch between using bigram and trigram, and use the appropriate prediction model for the prediction functionality
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
@@ -33,6 +33,22 @@ As she looked around, Elara realized that her adventure had just begun. Each per
 And so, with courage in her heart and a spirit ready for discovery, Elara set forth into the unknown, ready to make a difference in the world.
 """
 
+# Bigram model
+class BigramModel:
+    def __init__(self, sample_story):
+        self.bigrams = defaultdict(list)
+        self.words = sample_story.split()
+        for i in range(len(self.words) - 1):
+            self.bigrams[self.words[i]].append(self.words[i + 1])
+
+    def predict_next_word(self, current_text):
+        current_words = current_text.split()
+        last_word = current_words[-1] if current_words else ""
+        possible_next_words = self.bigrams[last_word]
+        if possible_next_words:
+            return possible_next_words[0]  # Returns the first possible word
+        return ""
+
 # Trigram model
 class TrigramModel:
     def __init__(self, sample_story):
@@ -52,8 +68,10 @@ class TrigramModel:
             return possible_next_words[0]  # Returns the first possible word
         return ""
 
+bigram_model = BigramModel(sample_story)
 trigram_model = TrigramModel(sample_story)
 story = []
+model_type = "bigram"  # Default model type
 
 class RequestHandler(BaseHTTPRequestHandler):
     def _set_headers(self):
@@ -72,17 +90,23 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps({'story': ' '.join(story)}).encode('utf-8'))
 
     def do_POST(self):
+        global model_type
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data)
         word = data.get('word', '').strip()
+        if 'model_type' in data:
+            model_type = data['model_type']
         if not word:
-            word = trigram_model.predict_next_word(' '.join(story))
+            if model_type == "bigram":
+                word = bigram_model.predict_next_word(' '.join(story))
+            else:
+                word = trigram_model.predict_next_word(' '.join(story))
         story.append(word)
         self._set_headers()
         response = {
             'story': ' '.join(story),
-            'next_word': trigram_model.predict_next_word(' '.join(story))
+            'next_word': bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
         }
         self.wfile.write(json.dumps(response).encode('utf-8'))
 
