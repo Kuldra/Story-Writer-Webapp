@@ -2,10 +2,18 @@
 
 #Prompt:
 
-#Please implement the auto complete function. I want that as the user is typing into the input box, auto complete word suggestions will be displayed in the "auto complete" box. And the suggestions get updated as the user it typing each letter
-#I want the auto complete functionality to auto complete the current word that the user is typing, instead of predicting the next word that the user is going to type. For example, when the user inputs "wo", I want the auto complete to display the suggestions "world, wonder".
-#Limit the number of suggestions to six and do not provide repeated suggestions
-#when predict word is using trigram model, auto complete suggestions are not showing as the user type into the input box. Please fix this
+#Please update the "Write" button as follows:
+#When Story is blank: say "Write"
+#When story is not blank and user input box is blank: say "Use predicted word"
+#When story is not blank and user input box is not blank: say "Write"
+
+
+#Please update the text in the button as the content of the user input box changes
+
+
+#autoComplete failed to fetch when the user clears the user input box. Please fix this
+
+
 
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -50,7 +58,7 @@ class BigramModel:
         last_word = current_words[-1] if current_words else ""
         possible_next_words = self.bigrams[last_word]
         if possible_next_words:
-            return possible_next_words  # Returns the first possible word
+            return possible_next_words[0]  # Returns the first possible word
         return ""
 
     def get_suggestions(self, current_text):
@@ -76,7 +84,7 @@ class TrigramModel:
         last_two_words = (current_words[-2], current_words[-1])
         possible_next_words = self.trigrams[last_two_words]
         if possible_next_words:
-            return possible_next_words  # Returns the first possible word
+            return possible_next_words[0]  # Returns the first possible word
         return ""
 
     def get_suggestions(self, current_text):
@@ -106,13 +114,21 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self._set_headers()
         next_word = bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
-        self.wfile.write(json.dumps({'story': ' '.join(story), 'next_word': next_word}).encode('utf-8'))
+        response = {
+            'story': ' '.join(story),
+            'next_word': next_word,
+            'button_text': 'Write' if not story or not next_word else 'Use predicted word'
+        }
+        self.wfile.write(json.dumps(response).encode('utf-8'))
 
     def do_POST(self):
         global model_type
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data)
+        
+        next_word = ""
+        
         if self.path == '/write':
             word = data.get('word', '').strip()
             if not word:
@@ -124,14 +140,18 @@ class RequestHandler(BaseHTTPRequestHandler):
             next_word = bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
             response = {
                 'story': ' '.join(story),
-                'next_word': next_word
+                'next_word': next_word,
+                'button_text': 'Write' if not next_word else 'Use predicted word'
             }
+        
         elif self.path == '/switch':
             model_type = data.get('model_type', model_type)
             next_word = bigram_model.predict_next_word(' '.join(story)) if model_type == "bigram" else trigram_model.predict_next_word(' '.join(story))
             response = {
-                'next_word': next_word
+                'next_word': next_word,
+                'button_text': 'Write' if not story or not next_word else 'Use predicted word'
             }
+        
         elif self.path == '/auto-complete':
             current_text = data.get('text', '').strip()
             if model_type == "bigram":
@@ -139,8 +159,10 @@ class RequestHandler(BaseHTTPRequestHandler):
             else:
                 suggestions = trigram_model.get_suggestions(current_text)
             response = {
-                'suggestions': suggestions
+                'suggestions': suggestions,
+                'button_text': 'Write' if current_text else ('Use predicted word' if story and next_word else 'Write')
             }
+        
         self._set_headers()
         self.wfile.write(json.dumps(response).encode('utf-8'))
 

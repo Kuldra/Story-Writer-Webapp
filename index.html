@@ -2,10 +2,16 @@
 <!--
 Prompt:
 
-Please update the code so when the webapp starts the prediction box says "I will predict your next word..." instead of "undefined"
-Please update it so pressing "use bigram model" and "use trigram model" only changes the prediction word, but doesn't update the story yet.
-Please update the code so only "writeWord()" function updates the story list in the python code. While "switchModel(Type)" function will only switch the prediction model (bigram or trigram) and not append the prediction word to the story list in the python code.
+Please update the "Write" button as follows:
+When Story is blank: say "Write"
+When story is not blank and user input box is blank: say "Use predicted word"
+When story is not blank and user input box is not blank: say "Write"
 
+
+Please update the text in the button as the content of the user input box changes
+
+
+autoComplete failed to fetch when the user clears the user input box. Please fix this
 
 -->
 
@@ -28,13 +34,27 @@ Please update the code so only "writeWord()" function updates the story list in 
     <div id="story-box">Your story will appear here...</div>
     <div id="next-word-box">I will predict your next word...</div>
     <input type="text" id="word-input" placeholder="Enter a word" oninput="autoComplete()">
-    <button onclick="writeWord()">Write</button>
+    <button id="write-button" onclick="writeWord()">Write</button>
     <div id="auto-complete-box">Auto Complete</div>
     <button onclick="switchModel('bigram')">Use Bigram Model</button>
     <button onclick="switchModel('trigram')">Use Trigram Model</button>
 
     <script>
         let modelType = 'bigram';  // Default model type
+
+        function updateButtonText() {
+            let wordInput = document.getElementById('word-input').value.trim();
+            let writeButton = document.getElementById('write-button');
+            let storyBox = document.getElementById('story-box').innerText.trim();
+
+            if (!storyBox) {
+                writeButton.innerText = 'Write';
+            } else if (storyBox && !wordInput) {
+                writeButton.innerText = 'Use predicted word';
+            } else if (storyBox && wordInput) {
+                writeButton.innerText = 'Write';
+            }
+        }
 
         function writeWord() {
             let word = document.getElementById('word-input').value.trim();
@@ -49,6 +69,7 @@ Please update the code so only "writeWord()" function updates the story list in 
                 document.getElementById('next-word-box').innerText = data.next_word || "I will predict your next word...";
                 document.getElementById('word-input').value = '';
                 document.getElementById('auto-complete-box').innerText = 'Auto Complete';
+                updateButtonText();
             })
             .catch(error => console.error('Error:', error));
         }
@@ -63,6 +84,7 @@ Please update the code so only "writeWord()" function updates the story list in 
             .then(response => response.json())
             .then(data => {
                 document.getElementById('next-word-box').innerText = data.next_word || "I will predict your next word...";
+                updateButtonText();
             })
             .catch(error => console.error('Error:', error));
         }
@@ -77,15 +99,17 @@ Please update the code so only "writeWord()" function updates the story list in 
             .then(response => response.json())
             .then(data => {
                 document.getElementById('auto-complete-box').innerText = data.suggestions.join(', ') || 'Auto Complete';
+                updateButtonText();
             })
             .catch(error => console.error('Error:', error));
         }
 
-        // Fetch the initial next word prediction
+        // Fetch the initial next word prediction and update button text
         fetch('http://localhost:8080')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('next-word-box').innerText = data.next_word || "I will predict your next word...";
+                updateButtonText();
             });
     </script>
 </body>
