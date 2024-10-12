@@ -2,8 +2,7 @@
 
 #Prompt:
 
-#Now I would like to implement a next word prediction functionality. Using a python written bigram model as the next word prediction model with provided story as the sample data, the webapp should be able to predict the next word that the user is going to write and display it in the "next word" box. If the user presses the "write" button without inputting any word in the input box, the predicted next word should be used as the input word. If the user did input a word in the input box, the user inputted word should be used as the input word. Please implement this without the use of any external library.
-
+#update the webapp to using trigram model instead of bigram model
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
@@ -34,23 +33,26 @@ As she looked around, Elara realized that her adventure had just begun. Each per
 And so, with courage in her heart and a spirit ready for discovery, Elara set forth into the unknown, ready to make a difference in the world.
 """
 
-# Bigram model
-class BigramModel:
+# Trigram model
+class TrigramModel:
     def __init__(self, sample_story):
-        self.bigrams = defaultdict(list)
+        self.trigrams = defaultdict(list)
         self.words = sample_story.split()
-        for i in range(len(self.words) - 1):
-            self.bigrams[self.words[i]].append(self.words[i + 1])
+        for i in range(len(self.words) - 2):
+            key = (self.words[i], self.words[i + 1])
+            self.trigrams[key].append(self.words[i + 2])
 
     def predict_next_word(self, current_text):
         current_words = current_text.split()
-        last_word = current_words[-1] if current_words else ""
-        possible_next_words = self.bigrams[last_word]
+        if len(current_words) < 2:
+            return ""
+        last_two_words = (current_words[-2], current_words[-1])
+        possible_next_words = self.trigrams[last_two_words]
         if possible_next_words:
-            return possible_next_words[0]  # Returns the first possible word #manual input to limit prediction to one word. Copilot failed to update and fix issue
+            return possible_next_words[0]  # Returns the first possible word
         return ""
 
-bigram_model = BigramModel(sample_story)
+trigram_model = TrigramModel(sample_story)
 story = []
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -75,12 +77,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         data = json.loads(post_data)
         word = data.get('word', '').strip()
         if not word:
-            word = bigram_model.predict_next_word(' '.join(story))
+            word = trigram_model.predict_next_word(' '.join(story))
         story.append(word)
         self._set_headers()
         response = {
             'story': ' '.join(story),
-            'next_word': bigram_model.predict_next_word(' '.join(story))
+            'next_word': trigram_model.predict_next_word(' '.join(story))
         }
         self.wfile.write(json.dumps(response).encode('utf-8'))
 
