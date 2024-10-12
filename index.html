@@ -1,1 +1,54 @@
 <!-- RECO7609 Story Writer Webapp python backend server-->
+<!--
+Prompt:
+
+Please generate a story writer webapp with html as the frontend and python as the backend without the use of external libraries in any part of the code.
+
+The webapp should have:
+1. Input box for user to input words
+2. have a write button for user to confirm input the word
+3. have a box above the input box to show the story inputed by the user
+4. have another thin box between the box and the input box labelled "Next Word"
+5. Have a box under the input box labelled "Auto  Complete"
+
+-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Writer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #story-box, #next-word-box, #auto-complete-box { border: 1px solid #000; padding: 10px; margin-bottom: 10px; }
+        #next-word-box { height: 20px; }
+        #auto-complete-box { height: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Story Writer</h1>
+    <div id="story-box">Your story will appear here...</div>
+    <div id="next-word-box">Next Word</div>
+    <input type="text" id="word-input" placeholder="Enter a word">
+    <button onclick="writeWord()">Write</button>
+    <div id="auto-complete-box">Auto Complete</div>
+
+    <script>
+        function writeWord() {
+            const word = document.getElementById('word-input').value;
+            fetch('/write', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ word: word })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('story-box').innerText = data.story;
+                document.getElementById('word-input').value = '';
+            });
+        }
+    </script>
+</body>
+</html>
